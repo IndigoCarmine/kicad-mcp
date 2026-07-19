@@ -7,6 +7,7 @@ from typing import Dict, Any
 from mcp.server.fastmcp import FastMCP, Context
 
 from kicad_mcp.utils.file_utils import get_project_files
+from kicad_mcp.utils.path_validator import validate_kicad_file, PathValidationError
 from kicad_mcp.utils.drc_history import save_drc_result, get_drc_history, compare_with_previous
 
 # Import implementations
@@ -30,10 +31,11 @@ def register_drc_tools(mcp: FastMCP) -> None:
             Dictionary with DRC history entries
         """
         print(f"Getting DRC history for project: {project_path}")
-        
-        if not os.path.exists(project_path):
-            print(f"Project not found: {project_path}")
-            return {"success": False, "error": f"Project not found: {project_path}"}
+
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid project path: {e}"}
         
         # Get history entries
         history_entries = get_drc_history(project_path)
@@ -74,10 +76,11 @@ def register_drc_tools(mcp: FastMCP) -> None:
             Dictionary with DRC results and statistics
         """
         print(f"Running DRC check for project: {project_path}")
-        
-        if not os.path.exists(project_path):
-            print(f"Project not found: {project_path}")
-            return {"success": False, "error": f"Project not found: {project_path}"}
+
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid project path: {e}"}
         
         # Get PCB file from project
         files = get_project_files(project_path)

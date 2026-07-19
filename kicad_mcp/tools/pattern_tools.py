@@ -7,6 +7,7 @@ from mcp.server.fastmcp import FastMCP, Context
 
 from kicad_mcp.utils.file_utils import get_project_files
 from kicad_mcp.utils.netlist_parser import extract_netlist, analyze_netlist
+from kicad_mcp.utils.path_validator import validate_kicad_file, PathValidationError
 from kicad_mcp.utils.pattern_recognition import (
     identify_power_supplies,
     identify_amplifiers,
@@ -43,10 +44,12 @@ def register_pattern_tools(mcp: FastMCP) -> None:
         Returns:
             Dictionary with identified circuit patterns
         """
-        if not os.path.exists(schematic_path):
+        try:
+            schematic_path = validate_kicad_file(schematic_path, "schematic", must_exist=True)
+        except PathValidationError as e:
             if ctx:
-                ctx.info(f"Schematic file not found: {schematic_path}")
-            return {"success": False, "error": f"Schematic file not found: {schematic_path}"}
+                ctx.info(f"Invalid schematic path: {e}")
+            return {"success": False, "error": f"Invalid schematic path: {e}"}
         
         # Report progress
         if ctx:
@@ -160,10 +163,12 @@ def register_pattern_tools(mcp: FastMCP) -> None:
         Returns:
             Dictionary with identified circuit patterns
         """
-        if not os.path.exists(project_path):
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
             if ctx:
-                ctx.info(f"Project not found: {project_path}")
-            return {"success": False, "error": f"Project not found: {project_path}"}
+                ctx.info(f"Invalid project path: {e}")
+            return {"success": False, "error": f"Invalid project path: {e}"}
         
         # Report progress
         if ctx:

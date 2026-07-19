@@ -8,6 +8,7 @@ from mcp.server.fastmcp import FastMCP
 
 from kicad_mcp.utils.kicad_utils import find_kicad_projects, open_kicad_project
 from kicad_mcp.utils.file_utils import get_project_files, load_project_json
+from kicad_mcp.utils.path_validator import validate_kicad_file, PathValidationError
 
 # Get PID for logging
 # _PID = os.getpid()
@@ -30,9 +31,11 @@ def register_project_tools(mcp: FastMCP) -> None:
     @mcp.tool()
     def get_project_structure(project_path: str) -> Dict[str, Any]:
         """Get the structure and files of a KiCad project."""
-        if not os.path.exists(project_path):
-            return {"error": f"Project not found: {project_path}"}
-        
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid project path: {e}"}
+
         project_dir = os.path.dirname(project_path)
         project_name = os.path.basename(project_path)[:-10]  # Remove .kicad_pro extension
         
@@ -56,4 +59,8 @@ def register_project_tools(mcp: FastMCP) -> None:
     @mcp.tool()
     def open_project(project_path: str) -> Dict[str, Any]:
         """Open a KiCad project in KiCad."""
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid project path: {e}"}
         return open_kicad_project(project_path)

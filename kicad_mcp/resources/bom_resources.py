@@ -9,6 +9,7 @@ from typing import Dict, List, Any, Optional
 from mcp.server.fastmcp import FastMCP
 
 from kicad_mcp.utils.file_utils import get_project_files
+from kicad_mcp.utils.path_validator import validate_kicad_file, PathValidationError
 
 # Import the helper functions from bom_tools.py to avoid code duplication
 from kicad_mcp.tools.bom_tools import parse_bom_file, analyze_bom_data
@@ -31,10 +32,12 @@ def register_bom_resources(mcp: FastMCP) -> None:
             Markdown-formatted BOM report
         """
         print(f"Generating BOM report for project: {project_path}")
-        
-        if not os.path.exists(project_path):
-            return f"Project not found: {project_path}"
-        
+
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return f"Invalid project path: {e}"
+
         # Get all project files
         files = get_project_files(project_path)
         
@@ -177,8 +180,10 @@ def register_bom_resources(mcp: FastMCP) -> None:
         """
         print(f"Generating CSV BOM for project: {project_path}")
 
-        if not os.path.exists(project_path):
-            return f"Project not found: {project_path}"
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return f"Invalid project path: {e}"
 
         # Get all project files
         files = get_project_files(project_path)
@@ -230,8 +235,10 @@ def register_bom_resources(mcp: FastMCP) -> None:
         """
         print(f"Generating JSON BOM for project: {project_path}")
 
-        if not os.path.exists(project_path):
-            return f"Project not found: {project_path}"
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return f"Invalid project path: {e}"
 
         # Get all project files
         files = get_project_files(project_path)

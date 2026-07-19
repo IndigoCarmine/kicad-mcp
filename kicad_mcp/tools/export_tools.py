@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional
 from mcp.server.fastmcp import FastMCP, Context, Image
 
 from kicad_mcp.utils.file_utils import get_project_files
+from kicad_mcp.utils.path_validator import validate_kicad_file, PathValidationError
 from kicad_mcp.config import KICAD_APP_PATH, system
 
 def register_export_tools(mcp: FastMCP) -> None:
@@ -39,10 +40,12 @@ def register_export_tools(mcp: FastMCP) -> None:
             
             print(f"Generating thumbnail via CLI for project: {project_path}")
 
-            if not os.path.exists(project_path):
-                print(f"Project not found: {project_path}")
+            try:
+                project_path = validate_kicad_file(project_path, "project", must_exist=True)
+            except PathValidationError as e:
+                print(f"Invalid project path: {e}")
                 if ctx:
-                    await ctx.info(f"Project not found: {project_path}")
+                    await ctx.info(f"Invalid project path: {e}")
                 return None
 
             # Get PCB file from project
@@ -167,6 +170,7 @@ async def generate_thumbnail_with_cli(pcb_file: str, ctx: Context | None):
             "--output", output_file,
             "--layers", "F.Cu,B.Cu,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts",  # Keep relevant layers
             # Consider adding options like --black-and-white if needed
+            "--",
             pcb_file
         ]
 

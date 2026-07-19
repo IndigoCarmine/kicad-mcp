@@ -9,6 +9,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from mcp.server.fastmcp import FastMCP, Context, Image
 
 from kicad_mcp.utils.file_utils import get_project_files
+from kicad_mcp.utils.path_validator import validate_kicad_file, PathValidationError
 
 def register_bom_tools(mcp: FastMCP) -> None:
     """Register BOM-related tools with the MCP server.
@@ -32,13 +33,12 @@ def register_bom_tools(mcp: FastMCP) -> None:
             Dictionary with BOM analysis results
         """
         print(f"Analyzing BOM for project: {project_path}")
-        
-        if not os.path.exists(project_path):
-            print(f"Project not found: {project_path}")
-            if ctx:
-                ctx.info(f"Project not found: {project_path}")
-            return {"success": False, "error": f"Project not found: {project_path}"}
-        
+
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid project path: {e}"}
+
         # Report progress
         if ctx:
             await ctx.report_progress(10, 100)
@@ -173,13 +173,12 @@ def register_bom_tools(mcp: FastMCP) -> None:
             Dictionary with export results
         """
         print(f"Exporting BOM for project: {project_path}")
-        
-        if not os.path.exists(project_path):
-            print(f"Project not found: {project_path}")
-            if ctx:
-                ctx.info(f"Project not found: {project_path}")
-            return {"success": False, "error": f"Project not found: {project_path}"}
-        
+
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid project path: {e}"}
+
         # Get access to the app context
         app_context = ctx.request_context.lifespan_context if ctx else None
         kicad_modules_available = app_context.kicad_modules_available if app_context else False
@@ -670,9 +669,9 @@ async def export_bom_with_cli(schematic_file: str, output_dir: str, project_name
             "export",
             "bom",
             "--output", output_file,
-            schematic_file
+            "--", schematic_file
         ]
-    
+
     elif system == "Windows":
         from kicad_mcp.config import KICAD_APP_PATH
         
@@ -693,9 +692,9 @@ async def export_bom_with_cli(schematic_file: str, output_dir: str, project_name
             "export",
             "bom",
             "--output", output_file,
-            schematic_file
+            "--", schematic_file
         ]
-    
+
     elif system == "Linux":
         # Assume kicad-cli is in the PATH
         kicad_cli = "kicad-cli"
@@ -707,9 +706,9 @@ async def export_bom_with_cli(schematic_file: str, output_dir: str, project_name
             "export",
             "bom",
             "--output", output_file,
-            schematic_file
+            "--", schematic_file
         ]
-    
+
     else:
         return {
             "success": False,

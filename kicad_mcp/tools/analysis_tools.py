@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional
 from mcp.server.fastmcp import FastMCP, Context, Image
 
 from kicad_mcp.utils.file_utils import get_project_files
+from kicad_mcp.utils.path_validator import validate_kicad_file, PathValidationError
 
 
 def register_analysis_tools(mcp: FastMCP) -> None:
@@ -18,9 +19,11 @@ def register_analysis_tools(mcp: FastMCP) -> None:
     @mcp.tool()
     def validate_project(project_path: str) -> Dict[str, Any]:
         """Basic validation of a KiCad project."""
-        if not os.path.exists(project_path):
-            return {"valid": False, "error": f"Project not found: {project_path}"}
-        
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return {"valid": False, "error": f"Invalid project path: {e}"}
+
         issues = []
         files = get_project_files(project_path)
         

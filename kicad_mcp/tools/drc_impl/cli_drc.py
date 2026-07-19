@@ -51,6 +51,7 @@ async def run_drc_via_cli(pcb_file: str, ctx: Context | None) -> Dict[str, Any]:
                 "drc",
                 "--format", "json",
                 "--output", output_file,
+                "--",
                 pcb_file
             ]
             

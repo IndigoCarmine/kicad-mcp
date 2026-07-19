@@ -8,6 +8,7 @@ import sys # Add sys import
 from typing import Dict, List, Any
 
 from kicad_mcp import config
+from kicad_mcp.utils.path_validator import validate_kicad_file, PathValidationError
 
 # Get PID for logging - Removed, handled by logging config
 # _PID = os.getpid()
@@ -94,9 +95,11 @@ def open_kicad_project(project_path: str) -> Dict[str, Any]:
     Returns:
         Dictionary with result information
     """
-    if not os.path.exists(project_path):
-        return {"success": False, "error": f"Project not found: {project_path}"}
-    
+    try:
+        project_path = validate_kicad_file(project_path, "project", must_exist=True)
+    except PathValidationError as e:
+        return {"success": False, "error": f"Invalid project path: {e}"}
+
     try:
         cmd = []
         if sys.platform == "darwin":  # macOS

@@ -13,6 +13,11 @@ from fastmcp import Context, FastMCP
 
 from kicad_mcp.utils.boundary_validator import BoundaryValidator
 from kicad_mcp.utils.file_utils import get_project_files
+from kicad_mcp.utils.path_validator import (
+    PathValidationError,
+    validate_directory,
+    validate_kicad_file,
+)
 
 
 async def validate_project_boundaries(project_path: str, ctx: Context = None) -> dict[str, Any]:
@@ -27,6 +32,12 @@ async def validate_project_boundaries(project_path: str, ctx: Context = None) ->
         Dictionary with validation results and report
     """
     try:
+        # Validate the client-supplied project path before any file access.
+        try:
+            validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid project path: {e}"}
+
         if ctx:
             await ctx.info("Starting boundary validation for project")
             await ctx.report_progress(10, 100)
@@ -129,6 +140,21 @@ async def generate_validation_report(
         Dictionary with report generation results
     """
     try:
+        # Validate the client-supplied project path.
+        try:
+            validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid project path: {e}"}
+
+        # Validate the client-supplied output path (arbitrary file write risk).
+        # When output_path is None it is derived from the validated project dir
+        # below and is therefore already safe.
+        if output_path is not None:
+            try:
+                validate_directory(os.path.dirname(output_path) or ".", must_exist=True)
+            except PathValidationError as e:
+                return {"success": False, "error": f"Invalid output path: {e}"}
+
         if ctx:
             await ctx.info("Generating validation report")
             await ctx.report_progress(10, 100)

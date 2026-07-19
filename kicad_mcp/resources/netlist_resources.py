@@ -2,10 +2,12 @@
 Netlist resources for KiCad schematics.
 """
 import os
+import re
 from mcp.server.fastmcp import FastMCP
 
 from kicad_mcp.utils.file_utils import get_project_files
 from kicad_mcp.utils.netlist_parser import extract_netlist, analyze_netlist
+from kicad_mcp.utils.path_validator import validate_kicad_file, PathValidationError
 
 
 def register_netlist_resources(mcp: FastMCP) -> None:
@@ -26,9 +28,11 @@ def register_netlist_resources(mcp: FastMCP) -> None:
             Markdown-formatted netlist report
         """
         print(f"Generating netlist report for schematic: {schematic_path}")
-        
-        if not os.path.exists(schematic_path):
-            return f"Schematic file not found: {schematic_path}"
+
+        try:
+            schematic_path = validate_kicad_file(schematic_path, "schematic", must_exist=True)
+        except PathValidationError as e:
+            return f"Invalid schematic path: {e}"
         
         try:
             # Extract netlist information
@@ -132,9 +136,11 @@ def register_netlist_resources(mcp: FastMCP) -> None:
             Markdown-formatted netlist report
         """
         print(f"Generating netlist report for project: {project_path}")
-        
-        if not os.path.exists(project_path):
-            return f"Project not found: {project_path}"
+
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return f"Invalid project path: {e}"
         
         # Get the schematic file
         try:
@@ -164,9 +170,14 @@ def register_netlist_resources(mcp: FastMCP) -> None:
             Markdown-formatted component report
         """
         print(f"Generating component report for {component_ref} in schematic: {schematic_path}")
-        
-        if not os.path.exists(schematic_path):
-            return f"Schematic file not found: {schematic_path}"
+
+        if not component_ref or not re.match(r'^[A-Za-z0-9_]+$', component_ref):
+            return f"Invalid component reference: {component_ref}"
+
+        try:
+            schematic_path = validate_kicad_file(schematic_path, "schematic", must_exist=True)
+        except PathValidationError as e:
+            return f"Invalid schematic path: {e}"
         
         try:
             # Extract netlist information

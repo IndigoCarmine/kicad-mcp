@@ -2,11 +2,13 @@
 Netlist extraction and analysis tools for KiCad schematics.
 """
 import os
+import re
 from typing import Dict, Any
 from mcp.server.fastmcp import FastMCP, Context
 
 from kicad_mcp.utils.file_utils import get_project_files
 from kicad_mcp.utils.netlist_parser import extract_netlist, analyze_netlist
+from kicad_mcp.utils.path_validator import validate_kicad_file, PathValidationError
 
 def register_netlist_tools(mcp: FastMCP) -> None:
     """Register netlist-related tools with the MCP server.
@@ -30,12 +32,11 @@ def register_netlist_tools(mcp: FastMCP) -> None:
             Dictionary with netlist information
         """
         print(f"Extracting netlist from schematic: {schematic_path}")
-        
-        if not os.path.exists(schematic_path):
-            print(f"Schematic file not found: {schematic_path}")
-            if ctx:
-                ctx.info(f"Schematic file not found: {schematic_path}")
-            return {"success": False, "error": f"Schematic file not found: {schematic_path}"}
+
+        try:
+            schematic_path = validate_kicad_file(schematic_path, "schematic", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid schematic path: {e}"}
         
         # Report progress
         if ctx:
@@ -109,12 +110,11 @@ def register_netlist_tools(mcp: FastMCP) -> None:
             Dictionary with netlist information
         """
         print(f"Extracting netlist for project: {project_path}")
-        
-        if not os.path.exists(project_path):
-            print(f"Project not found: {project_path}")
-            if ctx:
-                ctx.info(f"Project not found: {project_path}")
-            return {"success": False, "error": f"Project not found: {project_path}"}
+
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid project path: {e}"}
         
         # Report progress
         if ctx:
@@ -169,12 +169,11 @@ def register_netlist_tools(mcp: FastMCP) -> None:
             Dictionary with connection analysis
         """
         print(f"Analyzing connections in schematic: {schematic_path}")
-        
-        if not os.path.exists(schematic_path):
-            print(f"Schematic file not found: {schematic_path}")
-            if ctx:
-                ctx.info(f"Schematic file not found: {schematic_path}")
-            return {"success": False, "error": f"Schematic file not found: {schematic_path}"}
+
+        try:
+            schematic_path = validate_kicad_file(schematic_path, "schematic", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid schematic path: {e}"}
         
         # Report progress
         if ctx:
@@ -291,12 +290,14 @@ def register_netlist_tools(mcp: FastMCP) -> None:
             Dictionary with component connection information
         """
         print(f"Finding connections for component {component_ref} in project: {project_path}")
-        
-        if not os.path.exists(project_path):
-            print(f"Project not found: {project_path}")
-            if ctx:
-                ctx.info(f"Project not found: {project_path}")
-            return {"success": False, "error": f"Project not found: {project_path}"}
+
+        if not component_ref or not re.match(r'^[A-Za-z0-9_]+$', component_ref):
+            return {"success": False, "error": f"Invalid component reference: {component_ref}"}
+
+        try:
+            project_path = validate_kicad_file(project_path, "project", must_exist=True)
+        except PathValidationError as e:
+            return {"success": False, "error": f"Invalid project path: {e}"}
         
         # Report progress
         if ctx:

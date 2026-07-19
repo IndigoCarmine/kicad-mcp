@@ -207,7 +207,10 @@ def get_default_validator() -> PathValidator:
     """Get the default global path validator instance."""
     global _default_validator
     if _default_validator is None:
-        _default_validator = PathValidator()
+        from kicad_mcp import config
+        trusted_roots = {os.getcwd(), config.KICAD_USER_DIR}
+        trusted_roots.update(config.ADDITIONAL_SEARCH_PATHS)
+        _default_validator = PathValidator(trusted_roots)
     return _default_validator
 
 
